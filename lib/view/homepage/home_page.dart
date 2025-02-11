@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -13,12 +14,27 @@ class _HomePageState extends State<HomePage> {
   final TextEditingController quantitytextEditingController =
       TextEditingController();
 
+List<Map<String, dynamic>> items = [];
   // create new item
+  final Box shopping_box = Hive.box("shopping_box");
   Future<void> createItem(Map<String, dynamic> item) async {
-    final item = Item(
-        name: nametextEditingController.text,
-        quantity: quantitytextEditingController.text);
-    await Hive.box<Item>('items').add(item);
+    await shopping_box.add(item);
+
+
+       
+  }
+
+  void refresh(){
+    final data =  shopping_box.keys.map((key){
+      final value = shopping_box.get(key);
+      return {
+        "key": key,
+        "name": value["name"],
+        "quantity": value["quantity"]};
+    }).toList();
+    setState(() {
+      items = data.reversed.toList();
+    });
   }
 
   void showmethod(BuildContext context, int? itemkey) {
@@ -75,6 +91,20 @@ class _HomePageState extends State<HomePage> {
         onPressed: () => showmethod(context, null),
         child: const Icon(Icons.add),
       ),
+
+      body: ListView.builder(
+          itemCount: items.length,
+          itemBuilder: (_, index) {
+            final item = items[index];
+            return ListTile(
+              title: Text(item["name"]),
+              subtitle: Text(item["quantity"].toString()),
+              trailing: IconButton(
+                icon: const Icon(Icons.edit),
+                onPressed: () => showmethod(context, item["key"]),
+              ),
+            );
+          }),
     );
   }
 }
